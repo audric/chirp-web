@@ -1,7 +1,7 @@
 // Chirp-Web client-side logic
 
 let radios = {};         // {vendor: [model, ...]}
-let uploadPath = null;   // Path returned by /api/detect
+let uploadId = null;     // Opaque ID returned by /api/detect
 let sourceVendor = null;
 let sourceModel = null;
 
@@ -31,7 +31,7 @@ fetch("/api/radios")
 fileInput.addEventListener("change", () => {
     detectBtn.disabled = !fileInput.files.length;
     // Reset state
-    uploadPath = null;
+    uploadId = null;
     sourceVendor = null;
     sourceModel = null;
     detectResult.classList.add("hidden");
@@ -56,7 +56,7 @@ detectBtn.addEventListener("click", async () => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Detection failed");
 
-        uploadPath = data.upload_path;
+        uploadId = data.upload_id;
         sourceVendor = data.vendor;
         sourceModel = data.model;
         detectResult.textContent = t("step1.detected", { vendor: data.vendor, model: data.model });
@@ -89,7 +89,7 @@ destVendor.addEventListener("change", () => {
 destModel.addEventListener("change", updateConvertBtn);
 
 function updateConvertBtn() {
-    convertBtn.disabled = !(uploadPath && destVendor.value && destModel.value);
+    convertBtn.disabled = !(uploadId && destVendor.value && destModel.value);
 }
 
 // Convert
@@ -99,7 +99,7 @@ convertBtn.addEventListener("click", async () => {
     resultSection.classList.add("hidden");
 
     const form = new FormData();
-    form.append("upload_path", uploadPath);
+    form.append("upload_id", uploadId);
     form.append("dest_vendor", destVendor.value);
     form.append("dest_model", destModel.value);
     if (sourceVendor) form.append("source_vendor", sourceVendor);

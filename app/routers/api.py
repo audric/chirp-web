@@ -14,6 +14,20 @@ router = APIRouter(prefix="/api", tags=["api"])
 # In-memory map of download tokens -> (file_path, expires_at)
 _download_tokens: dict[str, tuple[str, float]] = {}
 
+# In-memory set of valid upload paths (created by _save_upload)
+_valid_uploads: set[str] = set()
+
+
+def _sanitize_filename(filename: str | None) -> str:
+    """Strip path components and dangerous characters from a filename."""
+    if not filename:
+        return "upload.img"
+    # Take only the final component (no directory traversal)
+    name = os.path.basename(filename)
+    # Remove any remaining suspicious characters
+    name = "".join(c for c in name if c.isalnum() or c in "._-")
+    return name or "upload.img"
+
 
 def _save_upload(upload: UploadFile) -> str:
     """Save uploaded file to UPLOAD_DIR, return path."""
@@ -22,11 +36,27 @@ def _save_upload(upload: UploadFile) -> str:
         raise HTTPException(413, "File too large")
     if not data:
         raise HTTPException(400, "Empty file")
-    filename = f"{secrets.token_hex(8)}_{upload.filename or 'upload.img'}"
+    safe_name = _sanitize_filename(upload.filename)
+    filename = f"{secrets.token_hex(8)}_{safe_name}"
     path = str(UPLOAD_DIR / filename)
     with open(path, "wb") as f:
         f.write(data)
+    _valid_uploads.add(path)
     return path
+
+
+def _validate_upload_path(upload_path: str) -> str:
+    """Validate that an upload_path was created by us and is inside UPLOAD_DIR."""
+    # Resolve to absolute path to prevent traversal
+    resolved = os.path.realpath(upload_path)
+    upload_dir = str(UPLOAD_DIR.resolve())
+    if not resolved.startswith(upload_dir + os.sep):
+        raise HTTPException(400, "Invalid upload path")
+    if resolved not in _valid_uploads:
+        raise HTTPException(400, "Invalid upload path")
+    if not os.path.exists(resolved):
+        raise HTTPException(400, "Upload file not found")
+    return resolved
 
 
 def _create_download_token(file_path: str) -> str:
@@ -34,6 +64,18 @@ def _create_download_token(file_path: str) -> str:
     expires = time.time() + DOWNLOAD_TOKEN_EXPIRE
     _download_tokens[token] = (file_path, expires)
     return token
+
+
+def _cleanup_expired_tokens():
+    """Remove expired tokens and their files."""
+    now = time.time()
+    expired = [t for t, (_, exp) in _download_tokens.items() if now > exp]
+    for t in expired:
+        file_path, _ = _download_tokens.pop(t)
+        try:
+            os.unlink(file_path)
+        except OSError:
+            pass
 
 
 @router.get("/radios")
@@ -48,15 +90,23 @@ def detect_radio(file: UploadFile):
     path = _save_upload(file)
     try:
         vendor, model = converter.detect_source_radio(path)
-        return {"vendor": vendor, "model": model, "upload_path": path}
+        # Return an opaque upload ID (just the filename, not full path)
+        upload_id = os.path.basename(path)
+        return {"vendor": vendor, "model": model, "upload_id": upload_id}
     except ValueError as exc:
+        # Clean up on failure
+        try:
+            os.unlink(path)
+            _valid_uploads.discard(path)
+        except OSError:
+            pass
         raise HTTPException(400, str(exc))
 
 
 @router.post("/convert")
 def convert_radio(
     file: UploadFile | None = None,
-    upload_path: str | None = Form(None),
+    upload_id: str | None = Form(None),
     dest_vendor: str = Form(""),
     dest_model: str = Form(""),
     source_vendor: str | None = Form(None),
@@ -66,9 +116,13 @@ def convert_radio(
     if not dest_vendor or not dest_model:
         raise HTTPException(400, "dest_vendor and dest_model are required")
 
-    # Use previously uploaded file or new upload
-    if upload_path and os.path.exists(upload_path):
-        source_path = upload_path
+    # Clean up expired tokens/files periodically
+    _cleanup_expired_tokens()
+
+    # Resolve source file: upload_id from prior detect, or new upload
+    if upload_id:
+        safe_id = os.path.basename(upload_id)
+        source_path = _validate_upload_path(str(UPLOAD_DIR / safe_id))
     elif file:
         source_path = _save_upload(file)
     else:
@@ -84,8 +138,15 @@ def convert_radio(
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc))
-    except Exception as exc:
-        raise HTTPException(500, f"Conversion failed: {exc}")
+    except Exception:
+        raise HTTPException(500, "Conversion failed")
+
+    # Clean up source upload
+    try:
+        os.unlink(source_path)
+        _valid_uploads.discard(source_path)
+    except OSError:
+        pass
 
     token = _create_download_token(result.output_path)
 
@@ -113,6 +174,10 @@ def download_file(token: str):
     file_path, expires = entry
     if time.time() > expires:
         _download_tokens.pop(token, None)
+        try:
+            os.unlink(file_path)
+        except OSError:
+            pass
         raise HTTPException(410, "Download link expired")
 
     if not os.path.exists(file_path):

@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 
 from chirp import directory, import_logic, memmap
 
+from app.config import UPLOAD_DIR
+
 LOG = logging.getLogger(__name__)
 
 # Populated once at startup by init_drivers()
@@ -156,7 +158,7 @@ def convert(
     # Save to temp file
     suffix = f".{dst_cls.FILE_EXTENSION}" if hasattr(dst_cls, "FILE_EXTENSION") else ".img"
     tmp = tempfile.NamedTemporaryFile(
-        delete=False, suffix=suffix, dir=None
+        delete=False, suffix=suffix, dir=str(UPLOAD_DIR)
     )
     tmp.close()
     dst_radio.save(tmp.name)
