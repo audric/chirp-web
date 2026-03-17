@@ -28,7 +28,7 @@ def _build_radio_list() -> dict[str, list[str]]:
     for drv_id, cls in sorted(directory.DRV_TO_RADIO.items()):
         vendor = cls.VENDOR
         model = cls.MODEL
-        if hasattr(cls, "VARIANT"):
+        if hasattr(cls, "VARIANT") and cls.VARIANT:
             model = f"{model} ({cls.VARIANT})"
         result.setdefault(vendor, []).append(model)
     # Sort models within each vendor

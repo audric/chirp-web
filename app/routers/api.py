@@ -46,13 +46,11 @@ def _save_upload(upload: UploadFile) -> str:
 
 
 def _validate_upload_path(upload_path: str) -> str:
-    """Validate that an upload_path was created by us and is inside UPLOAD_DIR."""
+    """Validate that an upload_path is inside UPLOAD_DIR and exists."""
     # Resolve to absolute path to prevent traversal
     resolved = os.path.realpath(upload_path)
     upload_dir = str(UPLOAD_DIR.resolve())
     if not resolved.startswith(upload_dir + os.sep):
-        raise HTTPException(400, "Invalid upload path")
-    if resolved not in _valid_uploads:
         raise HTTPException(400, "Invalid upload path")
     if not os.path.exists(resolved):
         raise HTTPException(400, "Upload file not found")

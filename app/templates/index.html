@@ -7,7 +7,7 @@
 
 <section id="converter">
     <div class="step" id="step-source">
-        <h2 data-i18n="step1.title">1. Select Source</h2>
+        <h2><span data-i18n="step1.title">1. Select Source</span> <button class="help-icon" id="source-help-btn" title="Help" aria-label="Help">?</button></h2>
         <div class="source-tabs">
             <button class="source-tab active" id="tab-upload" data-i18n="step1.tab_upload">Upload File</button>
             <button class="source-tab" id="tab-preset" data-i18n="step1.tab_preset">Preset Memories</button>
@@ -49,6 +49,21 @@
         <div id="result-box" class="result-box"></div>
     </div>
 </section>
+
+<div id="source-help-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 data-i18n="modal.source_help.title">Choosing a Source</h3>
+            <button class="modal-close" id="source-help-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <h4 data-i18n="modal.source_help.upload_title">Upload File</h4>
+            <p data-i18n="modal.source_help.upload_text">Upload a radio memory image (.img, .csv, .chirp, .icf, .dat, .bin) from your computer. The app will auto-detect which radio it belongs to. Use this when you have an existing file from the CHIRP desktop app or directly from your radio.</p>
+            <h4 data-i18n="modal.source_help.preset_title">Preset Memories</h4>
+            <p data-i18n="modal.source_help.preset_text">Choose from 20 built-in frequency lists covering common allocations like NOAA Weather, FRS/GMRS, Marine VHF, Aviation, PMR, and more. Use this to quickly program standard channels into any supported radio without needing an existing file.</p>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}

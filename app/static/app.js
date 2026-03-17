@@ -116,7 +116,7 @@ detectBtn.addEventListener("click", async () => {
         detectResult.textContent = t("step1.detected", { vendor: data.vendor, model: data.model });
         detectResult.classList.remove("hidden", "error");
     } catch (err) {
-        detectResult.textContent = err.message;
+        detectResult.textContent = translateError(err.message);
         detectResult.classList.remove("hidden");
         detectResult.classList.add("error");
     } finally {
@@ -201,7 +201,7 @@ convertBtn.addEventListener("click", async () => {
         resultBox.classList.remove("error");
         resultSection.classList.remove("hidden");
     } catch (err) {
-        resultBox.textContent = err.message;
+        resultBox.textContent = translateError(err.message);
         resultBox.classList.add("error");
         resultSection.classList.remove("hidden");
     } finally {
@@ -216,3 +216,40 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// Map known backend error messages to i18n keys
+const ERROR_PATTERNS = [
+    [/Could not detect radio from file/, "error.detect_failed"],
+    [/Unknown file format/, "error.unknown_format"],
+    [/File too large/, "error.file_too_large"],
+    [/Empty file/, "error.empty_file"],
+    [/Conversion failed/, "error.conversion_failed"],
+    [/Unknown radio/, "error.unknown_radio"],
+    [/No file provided/, "error.no_file"],
+    [/Invalid upload path/, "error.invalid_upload"],
+    [/Upload file not found/, "error.upload_not_found"],
+];
+
+function translateError(msg) {
+    for (const [pattern, key] of ERROR_PATTERNS) {
+        if (pattern.test(msg)) return t(key);
+    }
+    return msg;
+}
+
+// Source help modal
+const sourceHelpModal = document.getElementById("source-help-modal");
+document.getElementById("source-help-btn").addEventListener("click", () => {
+    sourceHelpModal.classList.remove("hidden");
+});
+document.getElementById("source-help-close").addEventListener("click", () => {
+    sourceHelpModal.classList.add("hidden");
+});
+sourceHelpModal.addEventListener("click", (e) => {
+    if (e.target === sourceHelpModal) sourceHelpModal.classList.add("hidden");
+});
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !sourceHelpModal.classList.contains("hidden")) {
+        sourceHelpModal.classList.add("hidden");
+    }
+});
