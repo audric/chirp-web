@@ -2,9 +2,12 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install chirp from local source
-COPY chirp-src /tmp/chirp-src
-RUN pip install --no-cache-dir /tmp/chirp-src && rm -rf /tmp/chirp-src
+# Install chirp from GitHub
+ARG CHIRP_REPO=https://github.com/kk7ds/chirp.git
+ARG CHIRP_BRANCH=master
+RUN apt-get update && apt-get install -y --no-install-recommends git \
+    && pip install --no-cache-dir "git+${CHIRP_REPO}@${CHIRP_BRANCH}" \
+    && apt-get purge -y git && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 # Install chirp-web dependencies
 COPY requirements.txt .

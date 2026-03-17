@@ -26,7 +26,7 @@ Upload that `.img` file to Chirp-Web for conversion. `.csv` and `.chirp` exports
 Requires Docker.
 
 ```bash
-./build.sh            # copies chirp source + builds image
+./build.sh            # downloads chirp source + builds image
 docker compose up     # http://localhost:8000
 ```
 
@@ -42,7 +42,7 @@ docker compose logs -f      # follow logs
 docker compose down         # stop
 ```
 
-To rebuild after changing dependencies or the chirp source:
+To rebuild after changing dependencies:
 
 ```bash
 ./build.sh
@@ -65,7 +65,7 @@ chirp-web/
 ├── uploads/                 # Temp uploaded files (gitignored)
 ├── Dockerfile
 ├── docker-compose.yml
-├── build.sh                 # Build helper (copies chirp src into context)
+├── build.sh                 # Build helper (downloads chirp from GitHub)
 ├── requirements.txt
 └── pyproject.toml
 ```
