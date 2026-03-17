@@ -20,22 +20,22 @@
         </div>
 
         <div id="panel-preset" class="hidden">
-            <select id="stock-config">
-                <option value="" data-i18n="step1.preset_select">-- Select a preset --</option>
-            </select>
+            <div class="search-select" id="preset-search-wrap">
+                <input type="text" id="preset-search" autocomplete="off" data-i18n-placeholder="step1.preset_search_placeholder" placeholder="Search presets (e.g. NOAA, GMRS, Marine)...">
+                <div class="search-select-dropdown hidden" id="preset-dropdown"></div>
+                <input type="hidden" id="stock-config">
+            </div>
             <div id="preset-info" class="result-box hidden"></div>
         </div>
     </div>
 
     <div class="step" id="step-dest">
         <h2 data-i18n="step2.title">2. Select Destination Radio</h2>
-        <div class="select-row">
-            <select id="dest-vendor">
-                <option value="" data-i18n="step2.vendor">-- Vendor --</option>
-            </select>
-            <select id="dest-model" disabled>
-                <option value="" data-i18n="step2.model">-- Model --</option>
-            </select>
+        <div class="search-select" id="dest-search-wrap">
+            <input type="text" id="dest-search" autocomplete="off" data-i18n-placeholder="step2.search_placeholder" placeholder="Search radio (e.g. Baofeng UV-5R)...">
+            <div class="search-select-dropdown hidden" id="dest-dropdown"></div>
+            <input type="hidden" id="dest-vendor">
+            <input type="hidden" id="dest-model">
         </div>
     </div>
 

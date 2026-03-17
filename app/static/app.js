@@ -1,6 +1,7 @@
 // Chirp-Web client-side logic
 
 let radios = {};         // {vendor: [model, ...]}
+let radioItems = [];     // [{vendor, model, label}, ...] flattened for search
 let stockConfigs = [];   // [{id, name, region}, ...]
 let uploadId = null;     // Opaque ID returned by /api/detect
 let sourceVendor = null;
@@ -10,8 +11,10 @@ let sourceMode = "upload"; // "upload" or "preset"
 const fileInput = document.getElementById("file-input");
 const detectBtn = document.getElementById("detect-btn");
 const detectResult = document.getElementById("detect-result");
-const destVendor = document.getElementById("dest-vendor");
-const destModel = document.getElementById("dest-model");
+const destVendorInput = document.getElementById("dest-vendor");
+const destModelInput = document.getElementById("dest-model");
+const destSearch = document.getElementById("dest-search");
+const destDropdown = document.getElementById("dest-dropdown");
 const convertBtn = document.getElementById("convert-btn");
 const resultSection = document.getElementById("result-section");
 const resultBox = document.getElementById("result-box");
@@ -21,47 +24,260 @@ const tabPreset = document.getElementById("tab-preset");
 const panelUpload = document.getElementById("panel-upload");
 const panelPreset = document.getElementById("panel-preset");
 const stockSelect = document.getElementById("stock-config");
+const presetSearch = document.getElementById("preset-search");
+const presetDropdown = document.getElementById("preset-dropdown");
 const presetInfo = document.getElementById("preset-info");
 
-// Load radio list on page load
+// ── Search-select helper ──────────────────────────────────────────────
+function setupSearchSelect({ input, dropdown, hidden, getItems, onSelect, formatItem, storageKey }) {
+    let items = [];
+    let activeIdx = -1;
+    let isOpen = false;
+
+    function setItems(newItems) { items = newItems; }
+
+    function open() {
+        render(input.value);
+        dropdown.classList.remove("hidden");
+        isOpen = true;
+    }
+
+    function close() {
+        dropdown.classList.add("hidden");
+        isOpen = false;
+        activeIdx = -1;
+    }
+
+    function select(item) {
+        if (!item) return;
+        input.value = item.label;
+        input.classList.add("has-value");
+        if (hidden) hidden.value = item.value || "";
+        close();
+        if (onSelect) onSelect(item);
+        if (storageKey) localStorage.setItem(storageKey, JSON.stringify(item));
+    }
+
+    function clear() {
+        input.value = "";
+        input.classList.remove("has-value");
+        if (hidden) hidden.value = "";
+        if (onSelect) onSelect(null);
+    }
+
+    function render(query) {
+        const q = (query || "").toLowerCase().trim();
+        const words = q.split(/\s+/).filter(Boolean);
+        const filtered = items.filter(item => {
+            if (!words.length) return true;
+            const hay = item.searchText || item.label.toLowerCase();
+            return words.every(w => hay.includes(w));
+        }).slice(0, 80);
+
+        dropdown.innerHTML = "";
+        activeIdx = -1;
+
+        if (!filtered.length) {
+            const div = document.createElement("div");
+            div.className = "ss-item";
+            div.style.color = "#999";
+            div.textContent = t("step2.no_results");
+            dropdown.appendChild(div);
+            return;
+        }
+
+        let lastGroup = null;
+        filtered.forEach((item, i) => {
+            if (item.group && item.group !== lastGroup) {
+                lastGroup = item.group;
+                const g = document.createElement("div");
+                g.className = "ss-group";
+                g.textContent = item.group;
+                dropdown.appendChild(g);
+            }
+            const div = document.createElement("div");
+            div.className = "ss-item";
+            div.innerHTML = formatItem ? formatItem(item, words) : escapeHtml(item.label);
+            div.addEventListener("mousedown", (e) => {
+                e.preventDefault(); // prevent input blur
+                select(item);
+            });
+            div.dataset.idx = i;
+            dropdown.appendChild(div);
+        });
+    }
+
+    input.addEventListener("focus", () => {
+        open();
+    });
+
+    input.addEventListener("input", () => {
+        if (hidden) hidden.value = "";
+        input.classList.remove("has-value");
+        if (onSelect) onSelect(null);
+        open();
+    });
+
+    input.addEventListener("blur", () => {
+        // Small delay to allow mousedown on items
+        setTimeout(() => {
+            close();
+            // If text doesn't match a selection, clear
+            if (hidden && !hidden.value) {
+                input.value = "";
+                input.classList.remove("has-value");
+            }
+        }, 150);
+    });
+
+    input.addEventListener("keydown", (e) => {
+        const visibleItems = dropdown.querySelectorAll(".ss-item:not([style*='color'])");
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            activeIdx = Math.min(activeIdx + 1, visibleItems.length - 1);
+            updateActive(visibleItems);
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            activeIdx = Math.max(activeIdx - 1, 0);
+            updateActive(visibleItems);
+        } else if (e.key === "Enter") {
+            e.preventDefault();
+            if (activeIdx >= 0 && visibleItems[activeIdx]) {
+                const idx = parseInt(visibleItems[activeIdx].dataset.idx);
+                const q = (input.value || "").toLowerCase().trim();
+                const words = q.split(/\s+/).filter(Boolean);
+                const filtered = items.filter(item => {
+                    if (!words.length) return true;
+                    const hay = item.searchText || item.label.toLowerCase();
+                    return words.every(w => hay.includes(w));
+                }).slice(0, 80);
+                if (filtered[idx]) select(filtered[idx]);
+            }
+        } else if (e.key === "Escape") {
+            close();
+            input.blur();
+        }
+    });
+
+    function updateActive(visibleItems) {
+        visibleItems.forEach((el, i) => {
+            el.classList.toggle("active", i === activeIdx);
+            if (i === activeIdx) el.scrollIntoView({ block: "nearest" });
+        });
+    }
+
+    // Restore from localStorage
+    function restore() {
+        if (!storageKey) return;
+        try {
+            const saved = JSON.parse(localStorage.getItem(storageKey));
+            if (saved && saved.label) {
+                // Verify the item still exists
+                const match = items.find(it =>
+                    it.value === saved.value || it.label === saved.label
+                );
+                if (match) select(match);
+            }
+        } catch {}
+    }
+
+    return { setItems, select, clear, restore };
+}
+
+// ── Highlight matching text ───────────────────────────────────────────
+function highlightMatch(text, words) {
+    if (!words.length) return escapeHtml(text);
+    let html = escapeHtml(text);
+    for (const w of words) {
+        const re = new RegExp(`(${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, "gi");
+        html = html.replace(re, '<span class="ss-match">$1</span>');
+    }
+    return html;
+}
+
+// ── Destination radio search ──────────────────────────────────────────
+const destSS = setupSearchSelect({
+    input: destSearch,
+    dropdown: destDropdown,
+    hidden: destModelInput,
+    storageKey: "chirpweb-dest",
+    onSelect(item) {
+        if (item) {
+            destVendorInput.value = item.vendor;
+            destModelInput.value = item.model;
+        } else {
+            destVendorInput.value = "";
+            destModelInput.value = "";
+        }
+        updateConvertBtn();
+    },
+    formatItem(item, words) {
+        return highlightMatch(item.label, words);
+    },
+});
+
+// ── Preset search ─────────────────────────────────────────────────────
+const presetSS = setupSearchSelect({
+    input: presetSearch,
+    dropdown: presetDropdown,
+    hidden: stockSelect,
+    storageKey: "chirpweb-preset",
+    onSelect(item) {
+        if (item) {
+            stockSelect.value = item.value;
+            presetInfo.textContent = t("step1.preset_ready", { name: item.label });
+            presetInfo.classList.remove("hidden", "error");
+        } else {
+            stockSelect.value = "";
+            presetInfo.classList.add("hidden");
+        }
+        resultSection.classList.add("hidden");
+        updateConvertBtn();
+    },
+    formatItem(item, words) {
+        return `<span class="ss-vendor">${escapeHtml(item.group)}</span> ${highlightMatch(item.name, words)}`;
+    },
+});
+
+// ── Load radio list ───────────────────────────────────────────────────
 fetch("/api/radios")
     .then(r => r.json())
     .then(data => {
         radios = data;
+        radioItems = [];
         for (const vendor of Object.keys(data).sort()) {
-            const opt = document.createElement("option");
-            opt.value = vendor;
-            opt.textContent = vendor;
-            destVendor.appendChild(opt);
+            for (const model of data[vendor]) {
+                radioItems.push({
+                    vendor,
+                    model,
+                    label: `${vendor} ${model}`,
+                    value: `${vendor}||${model}`,
+                    group: vendor,
+                    searchText: `${vendor} ${model}`.toLowerCase(),
+                });
+            }
         }
+        destSS.setItems(radioItems);
+        destSS.restore();
     });
 
-// Load stock configs
+// ── Load stock configs ────────────────────────────────────────────────
 fetch("/api/stock-configs")
     .then(r => r.json())
     .then(data => {
         stockConfigs = data;
-        // Group by region
-        const groups = {};
-        for (const cfg of data) {
-            const region = cfg.region || "Other";
-            if (!groups[region]) groups[region] = [];
-            groups[region].push(cfg);
-        }
-        for (const [region, configs] of Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))) {
-            const optgroup = document.createElement("optgroup");
-            optgroup.label = region;
-            for (const cfg of configs) {
-                const opt = document.createElement("option");
-                opt.value = cfg.id;
-                opt.textContent = cfg.name;
-                optgroup.appendChild(opt);
-            }
-            stockSelect.appendChild(optgroup);
-        }
+        const presetItems = data.map(cfg => ({
+            value: cfg.id,
+            label: cfg.name,
+            name: cfg.name.replace(/^[A-Z]{2}\s+/, ""), // name without region prefix for search display
+            group: cfg.region || "Other",
+            searchText: cfg.name.toLowerCase(),
+        }));
+        presetSS.setItems(presetItems);
+        presetSS.restore();
     });
 
-// Source mode tabs
+// ── Source mode tabs ──────────────────────────────────────────────────
 tabUpload.addEventListener("click", () => switchSource("upload"));
 tabPreset.addEventListener("click", () => switchSource("preset"));
 
@@ -84,7 +300,6 @@ function switchSource(mode) {
 // Enable detect button when file selected
 fileInput.addEventListener("change", () => {
     detectBtn.disabled = !fileInput.files.length;
-    // Reset state
     uploadId = null;
     sourceVendor = null;
     sourceModel = null;
@@ -126,38 +341,10 @@ detectBtn.addEventListener("click", async () => {
     }
 });
 
-// Stock config selection
-stockSelect.addEventListener("change", () => {
-    const selected = stockConfigs.find(c => c.id === stockSelect.value);
-    if (selected) {
-        presetInfo.textContent = t("step1.preset_ready", { name: selected.name });
-        presetInfo.classList.remove("hidden", "error");
-    } else {
-        presetInfo.classList.add("hidden");
-    }
-    resultSection.classList.add("hidden");
-    updateConvertBtn();
-});
-
-// Populate model dropdown when vendor changes
-destVendor.addEventListener("change", () => {
-    destModel.innerHTML = `<option value="">${t("step2.model")}</option>`;
-    const models = radios[destVendor.value] || [];
-    for (const m of models) {
-        const opt = document.createElement("option");
-        opt.value = m;
-        opt.textContent = m;
-        destModel.appendChild(opt);
-    }
-    destModel.disabled = !models.length;
-    updateConvertBtn();
-});
-
-destModel.addEventListener("change", updateConvertBtn);
-
 function updateConvertBtn() {
     const hasSource = sourceMode === "upload" ? !!uploadId : !!stockSelect.value;
-    convertBtn.disabled = !(hasSource && destVendor.value && destModel.value);
+    const hasDest = !!(destVendorInput.value && destModelInput.value);
+    convertBtn.disabled = !(hasSource && hasDest);
 }
 
 // Convert
@@ -174,8 +361,8 @@ convertBtn.addEventListener("click", async () => {
         if (sourceVendor) form.append("source_vendor", sourceVendor);
         if (sourceModel) form.append("source_model", sourceModel);
     }
-    form.append("dest_vendor", destVendor.value);
-    form.append("dest_model", destModel.value);
+    form.append("dest_vendor", destVendorInput.value);
+    form.append("dest_model", destModelInput.value);
 
     try {
         const res = await fetch("/api/convert", { method: "POST", body: form });
