@@ -24,13 +24,33 @@
 
 <section class="help-section">
     <h2 data-i18n="help.howto.title">How to Convert</h2>
+    <p data-i18n="help.howto.intro">There are two ways to start a conversion:</p>
+    <h3 data-i18n="help.howto.from_file">From an uploaded file</h3>
     <ol>
-        <li data-i18n="help.howto.step1"><strong>Upload</strong> &mdash; Click the file input on the home page and select your radio image file.</li>
+        <li data-i18n="help.howto.step1"><strong>Upload</strong> &mdash; Select the "Upload File" tab and choose your radio image file.</li>
         <li data-i18n="help.howto.step2"><strong>Detect</strong> &mdash; Click "Detect Radio" to auto-identify your source radio. The detected vendor and model will be shown.</li>
         <li data-i18n="help.howto.step3"><strong>Select destination</strong> &mdash; Pick the target vendor and model from the dropdowns.</li>
         <li data-i18n="help.howto.step4"><strong>Convert</strong> &mdash; Click "Convert". The converter will map as many memories as possible to the destination radio.</li>
         <li data-i18n="help.howto.step5"><strong>Download</strong> &mdash; Click the download link to save the converted file. The link expires after 10 minutes.</li>
     </ol>
+    <h3 data-i18n="help.howto.from_preset">From a preset memory list</h3>
+    <ol>
+        <li data-i18n="help.howto.preset1"><strong>Select preset</strong> &mdash; Switch to the "Preset Memories" tab and choose a predefined frequency list from the dropdown (e.g. NOAA Weather, FRS/GMRS, Marine VHF).</li>
+        <li data-i18n="help.howto.preset2"><strong>Select destination</strong> &mdash; Pick the target vendor and model.</li>
+        <li data-i18n="help.howto.preset3"><strong>Convert &amp; Download</strong> &mdash; Click "Convert", then download the result.</li>
+    </ol>
+</section>
+
+<section class="help-section">
+    <h2 data-i18n="help.presets.title">Preset Memory Lists</h2>
+    <p data-i18n="help.presets.intro">Chirp-Web includes 20 predefined frequency lists from the CHIRP project. These cover common channel allocations for different countries and services:</p>
+    <ul>
+        <li data-i18n="help.presets.us"><strong>US</strong> &mdash; NOAA Weather, FRS/GMRS, MURS, Marine VHF, Aviation, Calling Frequencies, 60m band, CA Railroad</li>
+        <li data-i18n="help.presets.ca"><strong>CA</strong> &mdash; Calling Frequencies, FRS/GMRS</li>
+        <li data-i18n="help.presets.eu"><strong>EU</strong> &mdash; LPD and PMR Channels</li>
+        <li data-i18n="help.presets.country"><strong>AU/NZ, DE, FR, GR, PL, SE, UK</strong> &mdash; Country-specific allocations (Citizens Band, Freenet, Marine VHF, etc.)</li>
+    </ul>
+    <p data-i18n="help.presets.note">Preset memories are converted to the destination radio format just like uploaded files. Channels outside the radio's frequency range will be skipped.</p>
 </section>
 
 <section class="help-section">

@@ -3,6 +3,7 @@
 import logging
 import tempfile
 from dataclasses import dataclass, field
+from importlib import resources
 
 from chirp import directory, import_logic, memmap
 
@@ -41,6 +42,50 @@ def get_supported_radios() -> dict[str, list[str]]:
     if _radio_cache is None:
         init_drivers()
     return _radio_cache
+
+
+def get_stock_configs() -> list[dict[str, str]]:
+    """Return list of available CHIRP stock configs.
+
+    Each entry: {id: filename, name: display name, region: country/region code}.
+    """
+    configs = []
+    try:
+        stock_dir = resources.files("chirp.stock_configs")
+        for entry in sorted(stock_dir.iterdir(), key=lambda e: e.name):
+            name = entry.name
+            if not name.endswith(".csv"):
+                continue
+            display = name.removesuffix(".csv")
+            # Extract region prefix (e.g. "US", "EU", "FR")
+            region = display.split(" ", 1)[0] if " " in display else ""
+            configs.append({"id": name, "name": display, "region": region})
+    except Exception:
+        LOG.exception("Failed to list stock configs")
+    return configs
+
+
+def get_stock_config_path(config_id: str) -> str:
+    """Copy a stock config to a temp file and return its path.
+
+    Raises ValueError if config_id is not found.
+    """
+    # Sanitise: only allow bare filenames (no path separators)
+    if "/" in config_id or "\\" in config_id or ".." in config_id:
+        raise ValueError(f"Invalid stock config id: {config_id}")
+    stock_dir = resources.files("chirp.stock_configs")
+    resource = stock_dir.joinpath(config_id)
+    try:
+        data = resource.read_bytes()
+    except Exception as exc:
+        raise ValueError(f"Stock config not found: {config_id}") from exc
+
+    tmp = tempfile.NamedTemporaryFile(
+        delete=False, suffix=".csv", dir=str(UPLOAD_DIR)
+    )
+    tmp.write(data)
+    tmp.close()
+    return tmp.name
 
 
 def detect_source_radio(file_path: str) -> tuple[str, str]:

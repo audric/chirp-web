@@ -6,11 +6,25 @@
 <p data-i18n="index.subtitle">Upload a radio memory image, pick a target radio, and download the converted file.</p>
 
 <section id="converter">
-    <div class="step" id="step-upload">
-        <h2 data-i18n="step1.title">1. Upload Source File</h2>
-        <input type="file" id="file-input" accept=".img,.dat,.bin,.icf,.csv,.chirp">
-        <button id="detect-btn" disabled data-i18n="step1.detect">Detect Radio</button>
-        <div id="detect-result" class="result-box hidden"></div>
+    <div class="step" id="step-source">
+        <h2 data-i18n="step1.title">1. Select Source</h2>
+        <div class="source-tabs">
+            <button class="source-tab active" id="tab-upload" data-i18n="step1.tab_upload">Upload File</button>
+            <button class="source-tab" id="tab-preset" data-i18n="step1.tab_preset">Preset Memories</button>
+        </div>
+
+        <div id="panel-upload">
+            <input type="file" id="file-input" accept=".img,.dat,.bin,.icf,.csv,.chirp">
+            <button id="detect-btn" disabled data-i18n="step1.detect">Detect Radio</button>
+            <div id="detect-result" class="result-box hidden"></div>
+        </div>
+
+        <div id="panel-preset" class="hidden">
+            <select id="stock-config">
+                <option value="" data-i18n="step1.preset_select">-- Select a preset --</option>
+            </select>
+            <div id="preset-info" class="result-box hidden"></div>
+        </div>
     </div>
 
     <div class="step" id="step-dest">

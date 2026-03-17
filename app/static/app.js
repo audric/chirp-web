@@ -1,9 +1,11 @@
 // Chirp-Web client-side logic
 
 let radios = {};         // {vendor: [model, ...]}
+let stockConfigs = [];   // [{id, name, region}, ...]
 let uploadId = null;     // Opaque ID returned by /api/detect
 let sourceVendor = null;
 let sourceModel = null;
+let sourceMode = "upload"; // "upload" or "preset"
 
 const fileInput = document.getElementById("file-input");
 const detectBtn = document.getElementById("detect-btn");
@@ -13,6 +15,13 @@ const destModel = document.getElementById("dest-model");
 const convertBtn = document.getElementById("convert-btn");
 const resultSection = document.getElementById("result-section");
 const resultBox = document.getElementById("result-box");
+
+const tabUpload = document.getElementById("tab-upload");
+const tabPreset = document.getElementById("tab-preset");
+const panelUpload = document.getElementById("panel-upload");
+const panelPreset = document.getElementById("panel-preset");
+const stockSelect = document.getElementById("stock-config");
+const presetInfo = document.getElementById("preset-info");
 
 // Load radio list on page load
 fetch("/api/radios")
@@ -26,6 +35,51 @@ fetch("/api/radios")
             destVendor.appendChild(opt);
         }
     });
+
+// Load stock configs
+fetch("/api/stock-configs")
+    .then(r => r.json())
+    .then(data => {
+        stockConfigs = data;
+        // Group by region
+        const groups = {};
+        for (const cfg of data) {
+            const region = cfg.region || "Other";
+            if (!groups[region]) groups[region] = [];
+            groups[region].push(cfg);
+        }
+        for (const [region, configs] of Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))) {
+            const optgroup = document.createElement("optgroup");
+            optgroup.label = region;
+            for (const cfg of configs) {
+                const opt = document.createElement("option");
+                opt.value = cfg.id;
+                opt.textContent = cfg.name;
+                optgroup.appendChild(opt);
+            }
+            stockSelect.appendChild(optgroup);
+        }
+    });
+
+// Source mode tabs
+tabUpload.addEventListener("click", () => switchSource("upload"));
+tabPreset.addEventListener("click", () => switchSource("preset"));
+
+function switchSource(mode) {
+    sourceMode = mode;
+    tabUpload.classList.toggle("active", mode === "upload");
+    tabPreset.classList.toggle("active", mode === "preset");
+    panelUpload.classList.toggle("hidden", mode !== "upload");
+    panelPreset.classList.toggle("hidden", mode !== "preset");
+    // Reset state
+    uploadId = null;
+    sourceVendor = null;
+    sourceModel = null;
+    detectResult.classList.add("hidden");
+    presetInfo.classList.add("hidden");
+    resultSection.classList.add("hidden");
+    updateConvertBtn();
+}
 
 // Enable detect button when file selected
 fileInput.addEventListener("change", () => {
@@ -72,6 +126,19 @@ detectBtn.addEventListener("click", async () => {
     }
 });
 
+// Stock config selection
+stockSelect.addEventListener("change", () => {
+    const selected = stockConfigs.find(c => c.id === stockSelect.value);
+    if (selected) {
+        presetInfo.textContent = t("step1.preset_ready", { name: selected.name });
+        presetInfo.classList.remove("hidden", "error");
+    } else {
+        presetInfo.classList.add("hidden");
+    }
+    resultSection.classList.add("hidden");
+    updateConvertBtn();
+});
+
 // Populate model dropdown when vendor changes
 destVendor.addEventListener("change", () => {
     destModel.innerHTML = `<option value="">${t("step2.model")}</option>`;
@@ -89,7 +156,8 @@ destVendor.addEventListener("change", () => {
 destModel.addEventListener("change", updateConvertBtn);
 
 function updateConvertBtn() {
-    convertBtn.disabled = !(uploadId && destVendor.value && destModel.value);
+    const hasSource = sourceMode === "upload" ? !!uploadId : !!stockSelect.value;
+    convertBtn.disabled = !(hasSource && destVendor.value && destModel.value);
 }
 
 // Convert
@@ -99,18 +167,22 @@ convertBtn.addEventListener("click", async () => {
     resultSection.classList.add("hidden");
 
     const form = new FormData();
-    form.append("upload_id", uploadId);
+    if (sourceMode === "preset") {
+        form.append("stock_config", stockSelect.value);
+    } else {
+        form.append("upload_id", uploadId);
+        if (sourceVendor) form.append("source_vendor", sourceVendor);
+        if (sourceModel) form.append("source_model", sourceModel);
+    }
     form.append("dest_vendor", destVendor.value);
     form.append("dest_model", destModel.value);
-    if (sourceVendor) form.append("source_vendor", sourceVendor);
-    if (sourceModel) form.append("source_model", sourceModel);
 
     try {
         const res = await fetch("/api/convert", { method: "POST", body: form });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Conversion failed");
 
-        let html = `<p><strong>${data.source_vendor} ${data.source_model}</strong> &rarr; <strong>${data.dest_vendor} ${data.dest_model}</strong></p>`;
+        let html = `<p><strong>${escapeHtml(data.source_vendor)} ${escapeHtml(data.source_model)}</strong> &rarr; <strong>${escapeHtml(data.dest_vendor)} ${escapeHtml(data.dest_model)}</strong></p>`;
         html += `<p>${t("result.memories", { converted: data.converted, skipped: data.skipped })}</p>`;
         html += `<p><a href="${data.download_url}">${t("result.download")}</a></p>`;
 

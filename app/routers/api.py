@@ -84,6 +84,12 @@ def list_radios():
     return converter.get_supported_radios()
 
 
+@router.get("/stock-configs")
+def list_stock_configs():
+    """Return available CHIRP stock/preset memory lists."""
+    return converter.get_stock_configs()
+
+
 @router.post("/detect")
 def detect_radio(file: UploadFile):
     """Upload a file and auto-detect the source radio."""
@@ -107,6 +113,7 @@ def detect_radio(file: UploadFile):
 def convert_radio(
     file: UploadFile | None = None,
     upload_id: str | None = Form(None),
+    stock_config: str | None = Form(None),
     dest_vendor: str = Form(""),
     dest_model: str = Form(""),
     source_vendor: str | None = Form(None),
@@ -119,8 +126,15 @@ def convert_radio(
     # Clean up expired tokens/files periodically
     _cleanup_expired_tokens()
 
-    # Resolve source file: upload_id from prior detect, or new upload
-    if upload_id:
+    # Resolve source file: stock config, upload_id from prior detect, or new upload
+    stock_source = False
+    if stock_config:
+        try:
+            source_path = converter.get_stock_config_path(stock_config)
+            stock_source = True
+        except ValueError as exc:
+            raise HTTPException(400, str(exc))
+    elif upload_id:
         safe_id = os.path.basename(upload_id)
         source_path = _validate_upload_path(str(UPLOAD_DIR / safe_id))
     elif file:
@@ -129,6 +143,10 @@ def convert_radio(
         raise HTTPException(400, "No file provided")
 
     try:
+        # Stock configs are CHIRP CSV files
+        if stock_source:
+            source_vendor = "Generic"
+            source_model = "CSV"
         result = converter.convert(
             source_path,
             dest_vendor,
