@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Help - Chirp-Web{% endblock %}
+
+{% block content %}
+<h1>Help</h1>
+
+<section class="help-section">
+    <h2>What is Chirp-Web?</h2>
+    <p>Chirp-Web is a web-based radio memory file converter. It lets you convert channel/memory configurations between different amateur radio models without installing any software. It is powered by <a href="https://chirp.danplanet.com" target="_blank">CHIRP</a>, which supports 189+ radios.</p>
+</section>
+
+<section class="help-section">
+    <h2>Getting a Radio Image File</h2>
+    <p>Chirp-Web converts between existing image files &mdash; it does not communicate with radios directly. To get an <code>.img</code> file from your radio:</p>
+    <ol>
+        <li>Install the <a href="https://chirp.danplanet.com/projects/chirp/wiki/Download" target="_blank">CHIRP desktop app</a></li>
+        <li>Connect your radio to your computer via USB or serial cable</li>
+        <li>Open CHIRP and go to <strong>Radio &rarr; Download From Radio</strong> (or press <kbd>Ctrl+D</kbd>)</li>
+        <li>Select your serial port and radio model, then click OK</li>
+        <li>Once the download completes, go to <strong>File &rarr; Save As</strong> to save the <code>.img</code> file</li>
+    </ol>
+    <p>You can also use <code>.csv</code> or <code>.chirp</code> files exported from CHIRP.</p>
+</section>
+
+<section class="help-section">
+    <h2>How to Convert</h2>
+    <ol>
+        <li><strong>Upload</strong> &mdash; Click the file input on the home page and select your radio image file.</li>
+        <li><strong>Detect</strong> &mdash; Click "Detect Radio" to auto-identify your source radio. The detected vendor and model will be shown.</li>
+        <li><strong>Select destination</strong> &mdash; Pick the target vendor and model from the dropdowns.</li>
+        <li><strong>Convert</strong> &mdash; Click "Convert". The converter will map as many memories as possible to the destination radio.</li>
+        <li><strong>Download</strong> &mdash; Click the download link to save the converted file. The link expires after 10 minutes.</li>
+    </ol>
+</section>
+
+<section class="help-section">
+    <h2>Writing the Converted File to Your Radio</h2>
+    <ol>
+        <li>Open the converted <code>.img</code> file in the CHIRP desktop app (<strong>File &rarr; Open</strong>)</li>
+        <li>Review the memories to make sure everything looks correct</li>
+        <li>Connect your destination radio via USB or serial cable</li>
+        <li>Go to <strong>Radio &rarr; Upload To Radio</strong> (or press <kbd>Ctrl+U</kbd>)</li>
+        <li>Select your port and radio model, then click OK</li>
+    </ol>
+</section>
+
+<section class="help-section">
+    <h2>What Gets Converted?</h2>
+    <p>The converter transfers as much data as the destination radio supports:</p>
+    <ul>
+        <li><strong>Frequency and name</strong> for each memory channel</li>
+        <li><strong>Duplex and offset</strong> (repeater shift)</li>
+        <li><strong>Tone mode</strong> &mdash; CTCSS, DCS/DTCS codes</li>
+        <li><strong>TX power level</strong> (mapped to the closest available level)</li>
+        <li><strong>Mode</strong> &mdash; FM, AM, etc. (if supported by both radios)</li>
+    </ul>
+    <p>Memories that fall outside the destination radio's frequency range or exceed its channel capacity are skipped. Any skipped channels and warnings are shown in the result.</p>
+</section>
+
+<section class="help-section">
+    <h2>Supported File Formats</h2>
+    <table>
+        <thead>
+            <tr><th>Extension</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>.img</code></td><td>CHIRP radio image (most common)</td></tr>
+            <tr><td><code>.chirp</code></td><td>CHIRP native format</td></tr>
+            <tr><td><code>.csv</code></td><td>CHIRP CSV export</td></tr>
+            <tr><td><code>.icf</code></td><td>Icom radio image</td></tr>
+            <tr><td><code>.dat</code>, <code>.bin</code></td><td>Various vendor formats</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<section class="help-section">
+    <h2>Troubleshooting</h2>
+    <dl>
+        <dt>"Could not detect radio from file"</dt>
+        <dd>The uploaded file doesn't match any known radio format. Make sure you're uploading a valid CHIRP image file, not a renamed or corrupted file.</dd>
+
+        <dt>Many memories skipped</dt>
+        <dd>The destination radio likely has a narrower frequency range or fewer channels than the source. Check the warnings list for details on each skipped channel.</dd>
+
+        <dt>Download link expired</dt>
+        <dd>Download links are valid for 10 minutes. Re-run the conversion to get a new link.</dd>
+    </dl>
+</section>
+{% endblock %}

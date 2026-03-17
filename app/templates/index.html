@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Chirp-Web - Radio Memory Converter{% endblock %}
+
+{% block content %}
+<h1>Radio Memory File Converter</h1>
+<p>Upload a radio memory image, pick a target radio, and download the converted file.</p>
+
+<section id="converter">
+    <div class="step" id="step-upload">
+        <h2>1. Upload Source File</h2>
+        <input type="file" id="file-input" accept=".img,.dat,.bin,.icf,.csv,.chirp">
+        <button id="detect-btn" disabled>Detect Radio</button>
+        <div id="detect-result" class="result-box hidden"></div>
+    </div>
+
+    <div class="step" id="step-dest">
+        <h2>2. Select Destination Radio</h2>
+        <div class="select-row">
+            <select id="dest-vendor">
+                <option value="">-- Vendor --</option>
+            </select>
+            <select id="dest-model" disabled>
+                <option value="">-- Model --</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="step">
+        <h2>3. Convert</h2>
+        <button id="convert-btn" disabled>Convert</button>
+    </div>
+
+    <div id="result-section" class="hidden">
+        <h2>Result</h2>
+        <div id="result-box" class="result-box"></div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/app.js"></script>
+{% endblock %}
