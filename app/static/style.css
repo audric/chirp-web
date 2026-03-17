@@ -19,6 +19,14 @@ nav .logo { color: #4fc3f7; text-decoration: none; font-weight: bold; font-size:
 nav .nav-links { display: flex; gap: 1rem; align-items: center; }
 nav a { color: #ccc; text-decoration: none; }
 nav a:hover { color: #fff; }
+.lang-switcher { display: flex; gap: 0.25rem; margin-left: 0.5rem; }
+.lang-btn {
+    background: transparent; border: 1px solid #555; color: #ccc;
+    padding: 0.15rem 0.4rem; border-radius: 3px; cursor: pointer;
+    font-size: 0.75rem; margin-top: 0;
+}
+.lang-btn:hover { background: #333; color: #fff; }
+.lang-btn.active { background: #4fc3f7; color: #1a1a2e; border-color: #4fc3f7; font-weight: bold; }
 main {
     max-width: 700px;
     margin: 2rem auto;

@@ -7,6 +7,7 @@ Web-based radio memory file converter powered by [CHIRP](https://chirp.danplanet
 - **189+ radios** supported via CHIRP's driver library
 - **Auto-detection** of source radio from uploaded image files
 - **Memory conversion** with frequency, tone, power level, and duplex mapping
+- **Multilanguage UI** — English, Italian, French, German, Spanish (auto-detected, switchable)
 - **OpenAPI docs** at `/docs` (built-in FastAPI)
 
 ## Getting a Radio Image File

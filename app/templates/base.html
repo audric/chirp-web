@@ -10,12 +10,20 @@
     <nav>
         <a href="/" class="logo">Chirp-Web</a>
         <div class="nav-links">
-            <a href="/help">Help</a>
+            <a href="/help" data-i18n="nav.help">Help</a>
+            <div class="lang-switcher">
+                <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
+                <button class="lang-btn" data-lang="it" onclick="setLang('it')">IT</button>
+                <button class="lang-btn" data-lang="fr" onclick="setLang('fr')">FR</button>
+                <button class="lang-btn" data-lang="de" onclick="setLang('de')">DE</button>
+                <button class="lang-btn" data-lang="es" onclick="setLang('es')">ES</button>
+            </div>
         </div>
     </nav>
     <main>
         {% block content %}{% endblock %}
     </main>
+    <script src="/static/i18n.js"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

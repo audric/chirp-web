@@ -45,7 +45,7 @@ detectBtn.addEventListener("click", async () => {
     if (!file) return;
 
     detectBtn.disabled = true;
-    detectBtn.textContent = "Detecting...";
+    detectBtn.textContent = t("step1.detecting");
     detectResult.classList.add("hidden");
 
     const form = new FormData();
@@ -59,7 +59,7 @@ detectBtn.addEventListener("click", async () => {
         uploadPath = data.upload_path;
         sourceVendor = data.vendor;
         sourceModel = data.model;
-        detectResult.textContent = `Detected: ${data.vendor} ${data.model}`;
+        detectResult.textContent = t("step1.detected", { vendor: data.vendor, model: data.model });
         detectResult.classList.remove("hidden", "error");
     } catch (err) {
         detectResult.textContent = err.message;
@@ -67,14 +67,14 @@ detectBtn.addEventListener("click", async () => {
         detectResult.classList.add("error");
     } finally {
         detectBtn.disabled = false;
-        detectBtn.textContent = "Detect Radio";
+        detectBtn.textContent = t("step1.detect");
         updateConvertBtn();
     }
 });
 
 // Populate model dropdown when vendor changes
 destVendor.addEventListener("change", () => {
-    destModel.innerHTML = '<option value="">-- Model --</option>';
+    destModel.innerHTML = `<option value="">${t("step2.model")}</option>`;
     const models = radios[destVendor.value] || [];
     for (const m of models) {
         const opt = document.createElement("option");
@@ -95,7 +95,7 @@ function updateConvertBtn() {
 // Convert
 convertBtn.addEventListener("click", async () => {
     convertBtn.disabled = true;
-    convertBtn.textContent = "Converting...";
+    convertBtn.textContent = t("step3.converting");
     resultSection.classList.add("hidden");
 
     const form = new FormData();
@@ -111,8 +111,8 @@ convertBtn.addEventListener("click", async () => {
         if (!res.ok) throw new Error(data.detail || "Conversion failed");
 
         let html = `<p><strong>${data.source_vendor} ${data.source_model}</strong> &rarr; <strong>${data.dest_vendor} ${data.dest_model}</strong></p>`;
-        html += `<p>${data.converted} memories converted, ${data.skipped} skipped</p>`;
-        html += `<p><a href="${data.download_url}">Download converted file</a></p>`;
+        html += `<p>${t("result.memories", { converted: data.converted, skipped: data.skipped })}</p>`;
+        html += `<p><a href="${data.download_url}">${t("result.download")}</a></p>`;
 
         if (data.warnings && data.warnings.length) {
             html += '<ul class="warning-list">';
@@ -120,7 +120,7 @@ convertBtn.addEventListener("click", async () => {
                 html += `<li>${escapeHtml(w)}</li>`;
             }
             if (data.warnings.length > 20) {
-                html += `<li>...and ${data.warnings.length - 20} more</li>`;
+                html += `<li>${t("result.more_warnings", { count: data.warnings.length - 20 })}</li>`;
             }
             html += "</ul>";
         }
@@ -134,7 +134,7 @@ convertBtn.addEventListener("click", async () => {
         resultSection.classList.remove("hidden");
     } finally {
         convertBtn.disabled = false;
-        convertBtn.textContent = "Convert";
+        convertBtn.textContent = t("step3.convert");
         updateConvertBtn();
     }
 });

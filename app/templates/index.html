@@ -2,36 +2,36 @@
 {% block title %}Chirp-Web - Radio Memory Converter{% endblock %}
 
 {% block content %}
-<h1>Radio Memory File Converter</h1>
-<p>Upload a radio memory image, pick a target radio, and download the converted file.</p>
+<h1 data-i18n="index.title">Radio Memory File Converter</h1>
+<p data-i18n="index.subtitle">Upload a radio memory image, pick a target radio, and download the converted file.</p>
 
 <section id="converter">
     <div class="step" id="step-upload">
-        <h2>1. Upload Source File</h2>
+        <h2 data-i18n="step1.title">1. Upload Source File</h2>
         <input type="file" id="file-input" accept=".img,.dat,.bin,.icf,.csv,.chirp">
-        <button id="detect-btn" disabled>Detect Radio</button>
+        <button id="detect-btn" disabled data-i18n="step1.detect">Detect Radio</button>
         <div id="detect-result" class="result-box hidden"></div>
     </div>
 
     <div class="step" id="step-dest">
-        <h2>2. Select Destination Radio</h2>
+        <h2 data-i18n="step2.title">2. Select Destination Radio</h2>
         <div class="select-row">
             <select id="dest-vendor">
-                <option value="">-- Vendor --</option>
+                <option value="" data-i18n="step2.vendor">-- Vendor --</option>
             </select>
             <select id="dest-model" disabled>
-                <option value="">-- Model --</option>
+                <option value="" data-i18n="step2.model">-- Model --</option>
             </select>
         </div>
     </div>
 
     <div class="step">
-        <h2>3. Convert</h2>
-        <button id="convert-btn" disabled>Convert</button>
+        <h2 data-i18n="step3.title">3. Convert</h2>
+        <button id="convert-btn" disabled data-i18n="step3.convert">Convert</button>
     </div>
 
     <div id="result-section" class="hidden">
-        <h2>Result</h2>
+        <h2 data-i18n="result.title">Result</h2>
         <div id="result-box" class="result-box"></div>
     </div>
 </section>
